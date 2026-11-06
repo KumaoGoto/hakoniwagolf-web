@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>箱庭ゴルフ</title>
+<meta name="description" content="春の 18 ホール、パーで回れるか。風を読んで打つ箱庭のゴルフ。ブラウザでそのまま遊べて、合計打数でランキングを競えます。">
+<link rel="canonical" href="https://hakoniwagolf.kumao.app/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="箱庭ゴルフ">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:url" content="https://hakoniwagolf.kumao.app/">
+<meta property="og:title" content="箱庭ゴルフ">
+<meta property="og:description" content="春の 18 ホール、パーで回れるか。風を読んで打つ箱庭のゴルフ。ブラウザでそのまま遊べます。">
+<meta property="og:image" content="https://hakoniwagolf.kumao.app/assets/og/hakoniwa-og-1.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="箱庭ゴルフ　春の 18 ホール、パーで回れるか。花の咲くコースの景色">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#183d2d">
+<meta name="color-scheme" content="dark">
+<meta name="format-detection" content="telephone=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="箱庭ゴルフ">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/zen-maru-900.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="assets/fonts/zen-maru-700.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="assets/fonts/big-shoulders.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="v/689815d8e19d/app.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="gl3" aria-hidden="true" hidden></canvas>
+  <canvas id="cv" aria-label="ゴルフコース"></canvas>
+  <div class="tilt top"></div><div class="tilt bot"></div>
+  <div id="vig"></div>
+
+  <div id="hud">
+    <header id="top">
+      <div class="trow">
+        <div class="holecard">
+          <div class="hc-no"><span class="lbl">Hole</span><b id="hNo">1</b></div>
+          <div class="hc-meta"><span id="hName" class="hc-name">はじまりの池</span><span class="hc-par"><span id="hPar">PAR 3</span><i></i><span id="hGold" class="gold">金 2</span></span></div>
+        </div>
+        <div class="rrow">
+        <div class="scorebox"><div><span class="lbl">打数</span><b id="strokes">0</b></div><div><span class="lbl">あと</span><b id="left">3</b></div></div>
+        <button id="menuBtn" class="iconbtn" aria-label="ホールを選ぶ"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6" fill="currentColor"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6" fill="currentColor"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6" fill="currentColor"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6" fill="currentColor"/></svg></button>
+        <button id="snd" class="iconbtn" aria-label="効果音をオフにする" aria-pressed="true">
+          <svg id="sndOn" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg id="sndOff" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" hidden><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="m16 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        </div>
+      </div>
+      <div class="wrow">
+        <div class="wind" title="風向きと風速"><svg id="windArrow" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12h14M13 6.5 18.5 12 13 17.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b id="windSpd">2.4</b><small>m/s</small></span></div>
+        <span id="toPin" class="topin">ピンまで<b>136</b>Y</span>
+        <span id="lie" class="lie"><i></i><span>ティー</span></span>
+      </div>
+    </header>
+
+    <div id="toast" aria-live="polite"><b></b><span></span></div>
+
+    <footer id="bottom" data-mode="idle" data-spin="on">
+      <div id="hint" hidden></div>
+      <div class="info">
+        <button id="retryBtn2" class="roundbtn" aria-label="やり直す" title="やり直す"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M5.5 12a6.5 6.5 0 1 0 2-4.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M6.6 3.6v4.2h4.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button id="camReset" class="pill" hidden title="指で回したカメラを真後ろに戻す">視点を戻す</button>
+        <button id="rearBtn" class="pill" aria-pressed="false" title="後ろから見下ろす視点に切り替える">後ろから</button>
+        <button id="viewBtn" class="pill" aria-pressed="false">全景</button>
+      </div>
+      <div id="clubs" class="clubs" role="group" aria-label="クラブ"></div>
+      <div id="spin" class="spin" role="group" aria-label="回転">
+        <div class="dial" aria-hidden="true"><i id="spinDot"></i></div>
+        <div class="spin-txt">
+          <div><span class="lbl">カーブ</span><b id="spinSide">—</b></div>
+          <div><span class="lbl">スピン</span><b id="spinBack">—</b></div>
+        </div>
+        <div class="spin-help">ドラッグで回転<br>2回タップで戻す</div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="intro" class="introcard" hidden>
+    <div class="in-no"><span>HOLE</span><b id="inNo">1</b></div>
+    <div class="in-body"><h2 id="inName"></h2><p class="in-par"><span id="inPar"></span> · <span id="inGold"></span> · <span id="inYd"></span></p><p id="inTip" class="in-tip"></p><p class="fine">タップでスキップ</p></div>
+  </div>
+
+  <div id="title" class="overlay">
+    <div class="card titlecard">
+      <p class="kicker">風を読むゴルフパズル</p>
+      <h1>箱庭ゴルフ<svg viewBox="0 0 30 40" width="26" height="36" aria-hidden="true"><path d="M8 3v34" stroke="#123a2c" stroke-width="2.4" stroke-linecap="round"/><path d="M9 4c6 1 11 3 18 6-7 3-12 5-18 6z" fill="#e23f2c"/><ellipse cx="8" cy="37" rx="6" ry="2" fill="#123a2c" opacity=".25"/></svg></h1>
+      <ul class="howto">
+        <li><svg viewBox="0 0 40 40" width="36" height="36" aria-hidden="true"><circle cx="12" cy="28" r="4.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 24.5 30 10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="3 3.5"/><path d="M23 10h7v7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="32" r="2" fill="#e23f2c"/></svg><div><b>引っぱって打つ</b><span>画面のどこでも、引いて離すとショット。元の所へ戻すと取り消し</span></div></li>
+        <li><svg viewBox="0 0 40 40" width="36" height="36" aria-hidden="true"><path d="M8 34C10 20 18 10 30 7" fill="none" stroke="#e23f2c" stroke-width="2.4" stroke-linecap="round"/><circle cx="30" cy="7" r="3" fill="currentColor"/><path d="M14 22h12M22 18l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b>打つ前に回転をかける</b><span>球の図を動かすと、カーブやバックスピン</span></div></li>
+        <li><svg viewBox="0 0 40 40" width="36" height="36" aria-hidden="true"><path d="M5 14h19a4.5 4.5 0 1 0-4.5-4.5M5 21h27a4.5 4.5 0 1 1-4.5 4.5M5 28h12" fill="none" stroke="#3aa0c8" stroke-width="2.4" stroke-linecap="round"/><circle cx="31" cy="12" r="2" fill="#e23f2c"/></svg><div><b>風を読んで、パー以内に</b><span>点線は無風のとき。流されるぶんは自分で読む</span></div></li>
+      </ul>
+      <button id="startBtn" class="primary">ホールを選ぶ</button>
+      <p class="fine">効果音と曲が鳴ります（右上のボタンでオフ）</p>
+    </div>
+  </div>
+
+  <div id="select" class="overlay" hidden>
+    <div class="card selectcard">
+      <p class="kicker" id="selKicker">クリア 0 · 金 0</p>
+      <h2>ホールを選ぶ</h2>
+      <div id="ctabs" class="ctabs" role="group" aria-label="コース"></div>
+      <div id="stages" class="stages" role="list"></div>
+      <p class="fine">パー以内でカップに入れたら合格。金はパーより1打少なく</p>
+    </div>
+  </div>
+
+  <div id="card" class="overlay" hidden>
+    <div class="card result">
+      <p class="kicker" id="cardKicker">HOLE 1 · PAR 3</p>
+      <h2 id="cardTitle">クリア!</h2>
+      <p id="cardSub" class="cardSub">3打でカップイン</p>
+      <div class="medals"><span id="mdPass" class="medal"></span><span id="mdGold" class="medal gold"></span></div>
+      <p id="cardBest" class="best">自己ベスト –</p>
+      <button id="nextBtn" class="primary">次のホールへ</button>
+      <div class="row2"><button id="retryBtn" class="secondary">もう一度</button><button id="listBtn" class="secondary">ホールを選ぶ</button></div>
+    </div>
+  </div>
+
+  <div id="loading" hidden>コースを造成中…</div>
+</div>
+<script src="v/689815d8e19d/js/web.js"></script>
+<script src="v/689815d8e19d/js/app.js"></script>
+</body>
+</html>

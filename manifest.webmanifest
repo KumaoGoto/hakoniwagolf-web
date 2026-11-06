@@ -1,0 +1,17 @@
+{
+  "name": "箱庭ゴルフ",
+  "short_name": "箱庭ゴルフ",
+  "description": "春の 18 ホール、パーで回れるか。風を読んで打つ箱庭のゴルフ。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#183d2d",
+  "theme_color": "#183d2d",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
