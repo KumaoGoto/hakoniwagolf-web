@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const WEB_VERSION='1.0.0';
+const WEB_VERSION='1.0.3';
 const SITE_URL='https://hakoniwagolf.kumao.app/';
 const COURSE_NAME='春の名門';
 const LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -8,7 +8,7 @@ const API=LOCAL&&new URLSearchParams(location.search).get('ranking')==='local'?'
 const VER='r1', TERMS_VERSION=1, NAME_MAX=10, BOARD_SIZE=50, TIMEOUT_MS=8000;
 const KEY={round:'hakoniwa-golf.round',best:'hakoniwa-golf.round-best',rank:'hakoniwa-golf.ranking',pending:'hakoniwa-golf.pending'};
 const TERMS=[
-  'ランキングには、決めた名前と合計打数が表示されます。',
+  'ランキングには、決めた名前と合計打数、ホールごとの打数が表示されます。',
   '記録を確かめるため、そのラウンドのショット（番手・向き・強さ・回転・球の位置）もサーバーに送ります。',
   '人を傷つける言葉、性的な言葉、他人の権利を侵す名前は使わないでください。見つけたものは予告なく非表示や変更にすることがあります。',
   'ふさわしくない名前やありえない記録は「通報」できます。通報した相手は、あなたの画面に出なくなります。運営が確かめて非表示にすることがあります。',
@@ -76,11 +76,11 @@ function fillGrid(box,scores){
   box.innerHTML='';
   g.LIST.forEach((h,k)=>{
     const c=el('div','sc-cell'), s=scores[k];
-    c.append(el('span','sc-no',String(k+1)));
+    c.append(el('span','sc-no',String(k+1)),el('span','sc-par',`P${h.par}`));
     const v=el('b','sc-v',s==null?'·':String(s));
     if(s!=null){ const d=s-h.par; v.classList.add(d<0?'under':d===0?'even':d===1?'over':'far'); }
     c.append(v);
-    c.setAttribute('aria-label',`${k+1}番 ${s==null?'まだ':s+'打'}`);
+    c.setAttribute('aria-label',`${k+1}番 パー${h.par} ${s==null?'まだ':s+'打'}`);
     box.append(c);
   });
 }
@@ -100,11 +100,10 @@ function showEndCard(rec,isBest){
   $('reSub').textContent=`通算 ${fmtPar(d)}（パー ${g.LIST.reduce((a,h)=>a+h.par,0)}）`+(isBest?' · 自己ベスト!':'');
   fillGrid($('reGrid'),rec.holes);
   $('reStatus').textContent='';
-  R.last=rec;
+  R.last=rec; R.declined=false;
   refreshEndButtons();
   $('endCard').hidden=false;
   if(Rank.joined) Rank.push().then(reportRank).catch(()=>{ $('reStatus').textContent='ランキングに送れませんでした（あとで送ります）'; });
-  else $('reStatus').textContent='名前を決めると、この記録をランキングに載せられます';
 }
 function reportRank(r){
   const s=$('reStatus');
@@ -113,7 +112,12 @@ function reportRank(r){
   if(r.hidden){ s.textContent='あなたの名前は運営が確認中です'; return; }
   s.textContent=`${r.total} 人中 ${r.rank} 位`+(r.best?' · 記録を更新':` · あなたの記録は ${r.strokes}`);
 }
-function refreshEndButtons(){ $('reRank').textContent=Rank.joined?'ランキングを見る':'名前を決めて載せる'; }
+function refreshEndButtons(){
+  const ask=!Rank.joined&&!R.declined;
+  $('reRank').textContent=ask?'載せる':'ランキングを見る';
+  $('reSkip').hidden=!ask;
+  if(ask) $('reStatus').textContent='ランキングに載せますか？';
+}
 async function share(){
   const r=R.last; if(!r) return;
   const text=`箱庭ゴルフ「${COURSE_NAME}」を ${r.strokes} 打で回った（${fmtPar(toParOf(r.holes))}）！ #箱庭ゴルフ\n${SITE_URL}`, data={text};
@@ -233,18 +237,28 @@ async function renderBoard(body,my){
     if(r.mine&&r.mine.hidden) body.append(el('p','rk-small','あなたの名前は運営が確認中のため、ほかの人には表示されていません'));
     if(!r.top.length) body.append(el('p','rk-empty','まだ誰の記録もありません'));
     else {
-      const list=el('ol','rk-list');
+      const list=el('ol','rk-list'), holesOf=e=>Array.isArray(e.holes)&&e.holes.length===g.LIST.length?e.holes:null;
       for(const e of r.top){
         const li=el('li','rk-row'+(e.mine?' mine':''));
         li.append(el('span','rk-rank',String(e.rank)),el('span','rk-name',e.name),el('b','rk-score',String(e.strokes)),el('span','rk-par',fmtPar(e.strokes-72)));
-        if(!e.mine&&Rank.joined){ li.classList.add('tap'); li.onclick=()=>rowMenu(li,e); }
+        const holes=holesOf(e), menu=!e.mine&&Rank.joined;
+        if(holes||menu){
+          li.classList.add('tap'); li.tabIndex=0; li.setAttribute('aria-expanded','false');
+          li.onclick=()=>rowDetail(list,li,e,holes,menu);
+          li.onkeydown=ev=>{ if(ev.target===li&&(ev.key==='Enter'||ev.key===' ')){ ev.preventDefault(); li.click(); } };
+        }
         list.append(li);
       }
       body.append(list);
-      if(Rank.joined) body.append(el('p','rk-small','名前を押すと、通報・表示しないができます'));
+      const anyHoles=r.top.some(holesOf);
+      if(anyHoles) body.append(el('p','rk-small',Rank.joined?'名前を押すと、各ホールの打数と、通報・表示しないが出ます':'名前を押すと、各ホールの打数が出ます'));
+      else if(Rank.joined) body.append(el('p','rk-small','名前を押すと、通報・表示しないができます'));
     }
     if(Rank.joined&&!r.top.some(e=>e.mine)) body.append(el('p','rk-mine',r.myRank?`あなたは ${r.myRank} 位（${r.mine.strokes} 打）`:'あなたの記録はまだありません。18 ホールを回ると載ります'));
-    if(!Rank.joined){ const b=el('button','primary','名前を決めて参加'); b.onclick=()=>openRank('join'); body.append(b); }
+    if(!Rank.joined){
+      if(Rank.pending){ const b=el('button','primary',`${Rank.pending.strokes} 打の記録を載せる`); b.onclick=()=>openRank('join'); body.append(b); }
+      else body.append(el('p','rk-small','18 ホールを回ると、記録を載せるか聞きます'));
+    }
   }catch(e){
     if(my!==rankSeq) return;
     body.innerHTML='';
@@ -252,8 +266,17 @@ async function renderBoard(body,my){
     const again=el('button','secondary','もう一度読む'); again.onclick=()=>openRank(); body.append(again);
   }
 }
+function rowDetail(list,li,e,holes,menu){
+  const open=li.querySelector('.rk-detail');
+  for(const d of list.querySelectorAll('.rk-detail')){ d.parentNode.setAttribute('aria-expanded','false'); d.remove(); }
+  if(open) return;
+  const box=el('div','rk-detail');
+  if(holes){ const grid=el('div','sc-grid'); fillGrid(grid,holes); box.append(grid); }
+  if(menu) box.append(rowMenu(li,e));
+  li.append(box); li.setAttribute('aria-expanded','true');
+  try{ box.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(_){}
+}
 function rowMenu(li,e){
-  const open=li.querySelector('.rk-menu'); if(open){ open.remove(); return; }
   const m=el('div','rk-menu'), act=(label,path,extra,done)=>{
     const b=el('button',null,label);
     b.onclick=async ev=>{ ev.stopPropagation(); b.disabled=true; try{ await Rank.call('POST',path,{uid:Rank.state.uid,pid:e.pid,...extra}); li.remove(); note(done); }catch(_){ b.disabled=false; note('つながりませんでした'); } };
@@ -262,7 +285,7 @@ function rowMenu(li,e){
   act('この人を表示しない','/v1/block',{},`「${e.name}」を表示しないにしました`);
   act('通報する（名前）','/v1/report',{reason:'name'},'通報しました。ありがとうございます');
   act('通報する（ありえない記録）','/v1/report',{reason:'cheat'},'通報しました。ありがとうございます');
-  li.append(m);
+  return m;
 }
 function note(text){ const t=el('div','rk-note',text); $('rankSheet').querySelector('.card').append(t); setTimeout(()=>t.remove(),2400); }
 function renderJoin(body,renaming){
@@ -277,7 +300,7 @@ function renderJoin(body,renaming){
   box.append(terms);
   const row=el('label','rk-agree'), agree=el('input'); agree.type='checkbox'; row.append(agree,document.createTextNode(' 利用規約に同意する'));
   box.append(row);
-  const msg=el('p','rk-error'), label=renaming?'この名前にする':'この名前で参加', go=el('button','primary',label);
+  const msg=el('p','rk-error'), label=renaming?'この名前にする':'この名前で載せる', go=el('button','primary',label);
   go.onclick=async()=>{
     if(!agree.checked){ msg.textContent='利用規約に同意してください'; return; }
     go.disabled=true; go.textContent='送っています…';
@@ -287,7 +310,7 @@ function renderJoin(body,renaming){
     openRank();
   };
   box.append(msg,go);
-  const back=el('button','rk-link','もどす'); back.onclick=()=>openRank(); box.append(back);
+  const back=el('button','rk-link','もどす'); back.onclick=()=>{ if($('endCard').hidden||renaming) openRank(); else closeRank(); }; box.append(back);
   if(renaming){
     const leave=el('button','rk-danger','ランキングをやめて記録を消す'); let armed=false;
     leave.onclick=async()=>{
@@ -314,6 +337,7 @@ const CARD_HTML=`
   <div id="reGrid" class="sc-grid"></div>
   <p id="reStatus" class="re-status" aria-live="polite"></p>
   <button id="reRank" class="primary">ランキングを見る</button>
+  <button id="reSkip" class="rk-link re-skip" hidden>今回は載せない</button>
   <div class="row2"><button id="reShare" class="secondary">シェア</button><button id="reAgain" class="secondary">もう一度回る</button></div>
   <button id="reTitle" class="rk-link re-title">タイトルへ</button>
 </div></div>
@@ -358,7 +382,8 @@ function build(){
   rank.onclick=()=>{ g.initAudio(); g.sfx('ui'); openRank(); };
   back.onclick=()=>{ g.sfx('ui'); toTitle(); };
   $('rcNext').onclick=()=>{ g.sfx('ui'); $('roundCard').hidden=true; g.beginHole(R.i); };
-  $('reRank').onclick=()=>{ g.sfx('ui'); openRank(Rank.joined?undefined:'join'); };
+  $('reRank').onclick=()=>{ g.sfx('ui'); openRank(Rank.joined||R.declined?undefined:'join'); };
+  $('reSkip').onclick=()=>{ g.sfx('ui'); R.declined=true; Rank.pending=null; drop(KEY.pending); refreshEndButtons(); $('reStatus').textContent='今回は載せません'; };
   $('reShare').onclick=()=>{ g.sfx('ui'); share(); };
   $('reAgain').onclick=()=>{ g.sfx('ui'); $('endCard').hidden=true; startRound(); };
   $('reTitle').onclick=()=>{ g.sfx('ui'); toTitle(); };

@@ -180,6 +180,7 @@ html[data-mode="round"] #retryBtn2{visibility:hidden}
 .sc-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;margin:0 0 14px}
 .sc-cell{display:grid;justify-items:center;gap:1px;padding:3px 0 4px;border:1px solid var(--paper-2);border-radius:7px;background:#fff}
 .sc-no{font-family:var(--font-num);font-weight:600;font-size:10px;line-height:1.1;color:var(--ink-2)}
+.sc-par{font-family:var(--font-num);font-weight:600;font-size:10px;line-height:1.1;color:var(--ink-2);opacity:.75}
 .sc-v{font-family:var(--font-num);font-weight:800;font-size:17px;line-height:1.1;color:var(--paper-2);font-variant-numeric:tabular-nums}
 .sc-v.even{color:var(--ink)}
 .sc-v.under{color:#b07a12}
@@ -189,6 +190,8 @@ html[data-mode="round"] #retryBtn2{visibility:hidden}
 .re-total small{font-family:var(--font-jp);font-size:18px;font-weight:900}
 .re-status{margin:0 0 12px;min-height:1.4em;font-size:13px;font-weight:700;color:var(--ink);text-align:center}
 .re-title{display:block;margin:10px auto 0}
+.re-skip{display:block;margin:2px auto 6px}
+.re-skip[hidden]{display:none}
 .ranksheet{width:min(420px,100%);max-height:100%;display:flex;flex-direction:column}
 #rankBody{flex:1 1 auto;min-height:120px;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 .rk-close{flex:none;width:100%;margin-top:10px}
@@ -203,9 +206,12 @@ html[data-mode="round"] #retryBtn2{visibility:hidden}
 .rk-name{font-size:14px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .rk-score{font-family:var(--font-num);font-weight:800;font-size:21px;font-variant-numeric:tabular-nums}
 .rk-par{font-family:var(--font-num);font-weight:600;font-size:14px;color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums}
-.rk-menu{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-top:4px}
+.rk-row.tap:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.rk-detail{grid-column:1/-1;display:grid;gap:8px;padding-top:4px}
+.rk-detail .sc-grid{margin:0}
+.rk-menu{display:flex;flex-wrap:wrap;gap:6px}
 .rk-menu button{border:1px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);padding:6px 10px;font-size:12px;font-weight:700}
-.rk-small{margin:8px 0 0;font-size:12px;color:var(--ink-2);text-align:center}
+.rk-small{margin:8px 0 0;font-size:12px;color:var(--ink-2);text-align:center;text-wrap:balance}
 .rk-mine{margin:10px 0 0;font-size:14px;font-weight:900;text-align:center}
 #rankBody>.primary{margin-top:12px}
 .rk-join{display:grid;gap:8px}
