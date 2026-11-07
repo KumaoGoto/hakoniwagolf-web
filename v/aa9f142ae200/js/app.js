@@ -2825,7 +2825,7 @@ function sfx(name,a,b){
 function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
 let appRect=app.getBoundingClientRect();
 function pt(e){ return {x:e.clientX-appRect.left,y:e.clientY-appRect.top}; }
-const PULL=.5, PUTT_EXP=2, SETTLE_T=.06, SETTLE_PX=12, SHOT_PULL=.001, PREVIEW_PULL=.001, CANCEL_PX=26;
+const PULL=.5, PUTT_EXP=1.5, SETTLE_T=.06, SETTLE_PX=12, SHOT_PULL=.001, PREVIEW_PULL=.001, CANCEL_PX=26;
 function setAimPoint(x,y){
   aim.x=x; aim.y=y;
   const dx=x-aim.x0, dy=y-aim.y0, len=Math.hypot(dx,dy);

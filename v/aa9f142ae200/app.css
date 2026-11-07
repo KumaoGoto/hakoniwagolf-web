@@ -206,9 +206,12 @@ html[data-mode="round"] #retryBtn2{visibility:hidden}
 .rk-name{font-size:14px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .rk-score{font-family:var(--font-num);font-weight:800;font-size:21px;font-variant-numeric:tabular-nums}
 .rk-par{font-family:var(--font-num);font-weight:600;font-size:14px;color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums}
-.rk-menu{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-top:4px}
+.rk-row.tap:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.rk-detail{grid-column:1/-1;display:grid;gap:8px;padding-top:4px}
+.rk-detail .sc-grid{margin:0}
+.rk-menu{display:flex;flex-wrap:wrap;gap:6px}
 .rk-menu button{border:1px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);padding:6px 10px;font-size:12px;font-weight:700}
-.rk-small{margin:8px 0 0;font-size:12px;color:var(--ink-2);text-align:center}
+.rk-small{margin:8px 0 0;font-size:12px;color:var(--ink-2);text-align:center;text-wrap:balance}
 .rk-mine{margin:10px 0 0;font-size:14px;font-weight:900;text-align:center}
 #rankBody>.primary{margin-top:12px}
 .rk-join{display:grid;gap:8px}

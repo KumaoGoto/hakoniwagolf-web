@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const WEB_VERSION='1.0.1';
+const WEB_VERSION='1.0.4';
 const SITE_URL='https://hakoniwagolf.kumao.app/';
 const COURSE_NAME='春の名門';
 const LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
@@ -8,7 +8,7 @@ const API=LOCAL&&new URLSearchParams(location.search).get('ranking')==='local'?'
 const VER='r1', TERMS_VERSION=1, NAME_MAX=10, BOARD_SIZE=50, TIMEOUT_MS=8000;
 const KEY={round:'hakoniwa-golf.round',best:'hakoniwa-golf.round-best',rank:'hakoniwa-golf.ranking',pending:'hakoniwa-golf.pending'};
 const TERMS=[
-  'ランキングには、決めた名前と合計打数が表示されます。',
+  'ランキングには、決めた名前と合計打数、ホールごとの打数が表示されます。',
   '記録を確かめるため、そのラウンドのショット（番手・向き・強さ・回転・球の位置）もサーバーに送ります。',
   '人を傷つける言葉、性的な言葉、他人の権利を侵す名前は使わないでください。見つけたものは予告なく非表示や変更にすることがあります。',
   'ふさわしくない名前やありえない記録は「通報」できます。通報した相手は、あなたの画面に出なくなります。運営が確かめて非表示にすることがあります。',
@@ -237,15 +237,22 @@ async function renderBoard(body,my){
     if(r.mine&&r.mine.hidden) body.append(el('p','rk-small','あなたの名前は運営が確認中のため、ほかの人には表示されていません'));
     if(!r.top.length) body.append(el('p','rk-empty','まだ誰の記録もありません'));
     else {
-      const list=el('ol','rk-list');
+      const list=el('ol','rk-list'), holesOf=e=>Array.isArray(e.holes)&&e.holes.length===g.LIST.length?e.holes:null;
       for(const e of r.top){
         const li=el('li','rk-row'+(e.mine?' mine':''));
         li.append(el('span','rk-rank',String(e.rank)),el('span','rk-name',e.name),el('b','rk-score',String(e.strokes)),el('span','rk-par',fmtPar(e.strokes-72)));
-        if(!e.mine&&Rank.joined){ li.classList.add('tap'); li.onclick=()=>rowMenu(li,e); }
+        const holes=holesOf(e), menu=!e.mine&&Rank.joined;
+        if(holes||menu){
+          li.classList.add('tap'); li.tabIndex=0; li.setAttribute('aria-expanded','false');
+          li.onclick=()=>rowDetail(list,li,e,holes,menu);
+          li.onkeydown=ev=>{ if(ev.target===li&&(ev.key==='Enter'||ev.key===' ')){ ev.preventDefault(); li.click(); } };
+        }
         list.append(li);
       }
       body.append(list);
-      if(Rank.joined) body.append(el('p','rk-small','名前を押すと、通報・表示しないができます'));
+      const anyHoles=r.top.some(holesOf);
+      if(anyHoles) body.append(el('p','rk-small',Rank.joined?'名前を押すと、各ホールの打数と、通報・表示しないが出ます':'名前を押すと、各ホールの打数が出ます'));
+      else if(Rank.joined) body.append(el('p','rk-small','名前を押すと、通報・表示しないができます'));
     }
     if(Rank.joined&&!r.top.some(e=>e.mine)) body.append(el('p','rk-mine',r.myRank?`あなたは ${r.myRank} 位（${r.mine.strokes} 打）`:'あなたの記録はまだありません。18 ホールを回ると載ります'));
     if(!Rank.joined){
@@ -259,8 +266,17 @@ async function renderBoard(body,my){
     const again=el('button','secondary','もう一度読む'); again.onclick=()=>openRank(); body.append(again);
   }
 }
+function rowDetail(list,li,e,holes,menu){
+  const open=li.querySelector('.rk-detail');
+  for(const d of list.querySelectorAll('.rk-detail')){ d.parentNode.setAttribute('aria-expanded','false'); d.remove(); }
+  if(open) return;
+  const box=el('div','rk-detail');
+  if(holes){ const grid=el('div','sc-grid'); fillGrid(grid,holes); box.append(grid); }
+  if(menu) box.append(rowMenu(li,e));
+  li.append(box); li.setAttribute('aria-expanded','true');
+  try{ box.scrollIntoView({block:'nearest',behavior:'smooth'}); }catch(_){}
+}
 function rowMenu(li,e){
-  const open=li.querySelector('.rk-menu'); if(open){ open.remove(); return; }
   const m=el('div','rk-menu'), act=(label,path,extra,done)=>{
     const b=el('button',null,label);
     b.onclick=async ev=>{ ev.stopPropagation(); b.disabled=true; try{ await Rank.call('POST',path,{uid:Rank.state.uid,pid:e.pid,...extra}); li.remove(); note(done); }catch(_){ b.disabled=false; note('つながりませんでした'); } };
@@ -269,7 +285,7 @@ function rowMenu(li,e){
   act('この人を表示しない','/v1/block',{},`「${e.name}」を表示しないにしました`);
   act('通報する（名前）','/v1/report',{reason:'name'},'通報しました。ありがとうございます');
   act('通報する（ありえない記録）','/v1/report',{reason:'cheat'},'通報しました。ありがとうございます');
-  li.append(m);
+  return m;
 }
 function note(text){ const t=el('div','rk-note',text); $('rankSheet').querySelector('.card').append(t); setTimeout(()=>t.remove(),2400); }
 function renderJoin(body,renaming){
