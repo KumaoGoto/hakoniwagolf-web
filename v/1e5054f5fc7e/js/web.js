@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const WEB_VERSION='1.0.2';
+const WEB_VERSION='1.0.5';
 const SITE_URL='https://hakoniwagolf.kumao.app/';
 const COURSE_NAME='春の名門';
 const LOCAL=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
