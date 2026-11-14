@@ -2849,7 +2849,7 @@ function orbitBy(dYaw,dPitch,zf){
 function twoTouch(){ const a=touches.get(orbit.ids[0]), b=touches.get(orbit.ids[1]); if(!a||!b) return null; return {mx:(a.x+b.x)/2,my:(a.y+b.y)/2,dist:Math.max(1,Math.hypot(b.x-a.x,b.y-a.y)),ang:Math.atan2(b.y-a.y,b.x-a.x)}; }
 cv.addEventListener('pointerdown',e=>{
   initAudio();
-  const p0=pt(e); if(e.pointerType==='mouse') touches.clear(); touches.set(e.pointerId,p0);
+  calmT=0; const p0=pt(e); if(e.pointerType==='mouse') touches.clear(); touches.set(e.pointerId,p0);
   if(game.state==='intro'){ endIntro(); return; }
   if(orbitOn()&&!orbit.mode){
     if(touches.size===2&&e.pointerType!=='mouse'){
@@ -2899,7 +2899,7 @@ function endPointer(e,cancel){
 cv.addEventListener('pointerup',e=>endPointer(e,false));
 cv.addEventListener('pointercancel',e=>endPointer(e,true));
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('wheel',e=>{ if(!orbitOn()) return; e.preventDefault(); orbitBy(0,0,Math.exp(clamp(e.deltaY,-120,120)*(e.ctrlKey?.01:.0015))); },{passive:false});
+cv.addEventListener('wheel',e=>{ if(!orbitOn()) return; e.preventDefault(); calmT=0; orbitBy(0,0,Math.exp(clamp(e.deltaY,-120,120)*(e.ctrlKey?.01:.0015))); },{passive:false});
 const spinPad={id:null,x:0,y:0,moved:0,lastTap:-1}, SPIN_PAD_PX=60;
 $('spin').addEventListener('pointerdown',e=>{
   if(game.state!=='aim'||aim.active||spinPad.id!==null) return;
@@ -3000,10 +3000,30 @@ function computePreview(){
   if(c.id==='PT'){ const d=st.v*st.v/(2*puttMu()*G); if(!hole.assist) return {putt:true,land:{x:ball.x+aim.dir.x*d,y:ball.y+aim.dir.y*d},dist:d}; const r=simulatePutt(st); r.dist=d; return r; }
   const r=simulateFlight(st,false); r.carry=Math.hypot(r.land.x-ball.x,r.land.y-ball.y); return r;
 }
+const FPS={max:60,calm:30,calmDelay:.3,calmSpeed:4,states:new Set(['aim','card','title','select'])};
+let calmT=0, camPrev=null, rafT=0, vsync=1/60;
+function camMotion(dt){
+  const c={x:cam.x,y:cam.y,s:cam.s,ox:cam.ox,oy:cam.oy,cx:camR.cx,cy:camR.cy,k:rear.k,x3:cam3.x,y3:cam3.y,d3:cam3.d,yaw:cam3.yaw,pitch:cam3.pitch}, p=camPrev;
+  camPrev=c;
+  if(!p||dt<=0) return Infinity;
+  let m=Math.max(Math.hypot(c.ox-p.ox,c.oy-p.oy),Math.hypot(c.cx-p.cx,c.cy-p.cy),Math.abs(c.k-p.k)*view.H);
+  if(c.k<1) m=Math.max(m,Math.hypot(c.x-p.x,c.y-p.y)*c.s,Math.abs(Math.log(c.s/p.s))*view.H);
+  if(c.k>0) m=Math.max(m,Math.hypot(c.x3-p.x3,c.y3-p.y3)*rearF()/Math.max(c.d3,1e-6),Math.abs(Math.log(c.d3/p.d3))*view.H,Math.abs(wrapA(c.yaw-p.yaw))*view.W,Math.abs(c.pitch-p.pitch)*view.H);
+  return m/dt;
+}
+function updateCalm(dt){
+  const still=FPS.states.has(game.state)&&!touches.size&&!aim.active&&!orbit.mode&&cam.shake<=0&&game.ts>.99&&!parts.length;
+  const sp=camMotion(dt);
+  calmT=still&&sp<FPS.calmSpeed?calmT+dt:0;
+}
 function frame(ts){
-  const t=ts/1000, dt=last?Math.min(.05,t-last):.016; last=t; now=t;
-  try{ update(dt); render(); }catch(err){ console.error(err); }
   requestAnimationFrame(frame);
+  const t=ts/1000;
+  if(rafT){ const d=t-rafT; if(d>.003&&d<.1) vsync+=(d-vsync)*.1; }
+  rafT=t;
+  if(last&&t-last<1/(calmT>=FPS.calmDelay?FPS.calm:FPS.max)-vsync*.6) return;
+  const dt=last?Math.min(.05,t-last):.016; last=t; now=t;
+  try{ update(dt); render(); updateCalm(dt); }catch(err){ console.error(err); }
 }
 function snapshot(){ return {started:game.state!=='title'&&game.state!=='boot'&&game.state!=='select',course:courseNo,hole:game.hole,soundOn:audio.on,rear:rear.on}; }
 function start(data){
