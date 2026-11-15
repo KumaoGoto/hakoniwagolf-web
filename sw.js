@@ -1,10 +1,10 @@
 // 通信なしで遊べるようにする手元の置き場（Service Worker）。VERSION と PRECACHE は Web/tools/make_sw.py が書く。
 // 中身が変わると VERSION が変わり、古い置き場を捨てて入れ替わる。公開の形（tools/stage.py）では、プログラムは版ごとの箱 v/<VERSION>/ に入る。
 
-const VERSION = '79b131493da5';
+const VERSION = '4484dd13caf0';
 const PRECACHE = [
   './',
-  'v/79b131493da5/app.css',
+  'v/4484dd13caf0/app.css',
   'assets/fonts/OFL-BigShouldersDisplay.txt',
   'assets/fonts/OFL-ZenMaruGothic.txt',
   'assets/fonts/big-shoulders.woff',
@@ -17,8 +17,8 @@ const PRECACHE = [
   'assets/icons/icon-512.png',
   'assets/icons/icon-maskable-512.png',
   'index.html',
-  'v/79b131493da5/js/app.js',
-  'v/79b131493da5/js/web.js',
+  'v/4484dd13caf0/js/app.js',
+  'v/4484dd13caf0/js/web.js',
   'manifest.webmanifest',
   'privacy.html',
 ];
